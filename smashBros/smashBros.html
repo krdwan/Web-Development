@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Smash Bros</title>
+	<style>
+		.container{
+			background-color: #ffe6e6;
+			border: solid;
+		}
+		table {
+  			width: 100%;
+  			border-collapse: collapse;
+		}
+		th {
+  			height: 50px;
+		}
+		table, th, td {
+  			border: 1px solid black;
+		}
+	</style>
+</head>
+<body>
+	<h2>Super Smash Tracker</h2>
+	<br/>
+	<table id="table1"></table><br/>
+	<div id="buttonNav"></div>
+	<br/><hr/><br/>
+	<div id="details">
+	</div>
+	<script>
+		var players= {};
+		var nextId = 0;
+		var matches = [];
+		var eloConstant = 100;
+		var eloInitial = 1000;
+		var pendingMatch = {
+			win:"",
+			loss:"",
+		}
+		const table1 = document.querySelector("#table1");
+		const details = document.querySelector("#details");
+		const buttonNav = document.querySelector("#buttonNav");
+
+		function initializeButtons(buttonNav) {
+			let play = document.createElement("button");
+			play.setAttribute("id","addPlayer");
+			play.textContent = "Manage Players";
+			play.addEventListener("click",handleManagePlayers);
+			buttonNav.appendChild(play);
+
+			let history = document.createElement("button");
+			history.setAttribute("id","history");
+			history.textContent = "Match History";
+			history.addEventListener("click",renderMatchHistory);
+			buttonNav.appendChild(history);
+
+			let currMatch = document.createElement("button");
+			currMatch.setAttribute("id","currMatch");
+			currMatch.textContent = "Current Match";
+			currMatch.addEventListener("click",renderPendingMatch);
+			buttonNav.appendChild(currMatch);
+		}
+
+		function renderMatchHistory() {
+			while (details.firstChild) {
+				details.removeChild(details.firstChild);
+			}
+			if (matches.length == 0) {
+				details.textContent = "There have been no matches.";
+				return;
+			}
+			let ul = document.createElement("ul");
+			details.appendChild(ul);
+			for (let i=0;i<matches.length;i++) {
+				let j=matches.length-1-i;
+				let li = document.createElement("li");
+				let winner = players[matches[j].w].name;
+				let loser = players[matches[j].l].name;
+				li.textContent = winner + " defeats " + loser;
+				ul.appendChild(li);
+			}
+		}
+
+		function handleManagePlayers() {
+			renderManagePlayers();
+		}
+
+		function renderManagePlayers() {
+			while (details.firstChild) {
+				details.removeChild(details.firstChild);
+			}
+			let input = document.createElement("input");
+			input.setAttribute("value","Enter Player Name");
+			input.setAttribute("id","newPlayer");
+			input.addEventListener("click",highlightMe);
+			details.appendChild(input);
+
+			let add = document.createElement("button");
+			add.textContent = "Add Player";
+			add.addEventListener("click",handleAddPlayer);
+			details.appendChild(add);
+
+			let heading = document.createElement("h3");
+			heading.textContent = "Players"
+			details.appendChild(heading);
+
+			let table = document.createElement("table");
+			createPlayerRows(table);
+			details.appendChild(table);
+
+			function createPlayerRows(table) {
+				plays = Object.values(players);
+				plays.sort((a,b) => {
+					if ((a.active && b.active) || (!a.active && !b.active)) {
+						return a.name.toLowerCase() < b.name.toLowerCase() ? -1 : 1;
+					} else {
+						return a.active ? -1 : 1;
+					}
+				});
+				for (let i=0;i<plays.length;i++) {
+					let row = document.createElement("tr");
+					let col = document.createElement("td");
+					col.setAttribute("id",plays[i].id);
+					if (plays[i].active) {
+						col.textContent = plays[i].name;	
+					} else {
+						let strike = document.createElement("strike");
+						strike.textContent = plays[i].name;	
+						col.appendChild(strike);
+					}
+					row.appendChild(col);
+
+					col = document.createElement("td");
+					renderUpdateName(col);
+					row.appendChild(col);
+
+					col = document.createElement("td");
+					button = document.createElement("button");
+					button.textContent = plays[i].active ? "Mark as Inactive" : 
+						"Mark as Active";
+					button.addEventListener("click",handleToggleActive);
+					col.appendChild(button);
+					row.appendChild(col);
+					table.appendChild(row);
+				}
+			}
+		}
+
+		function renderUpdateName(elm) {
+			while (elm.firstChild) {
+				elm.removeChild(elm.firstChild);
+			}
+			let button = document.createElement("button");
+			button.textContent = "Update Name";
+			button.addEventListener("click",handleUpdateName);
+			elm.appendChild(button);
+		} 
+
+		function handleUpdateName(e) {
+			let td = e.srcElement.parentNode;
+			td.removeChild(td.firstChild);
+			let button = document.createElement("button");
+			button.textContent = "Save";
+			button.addEventListener("click",handleSaveName);
+			td.appendChild(button);
+			button = document.createElement("button");
+			button.textContent = "Cancel";
+			button.addEventListener("click",handleCancelSaveName);
+			td.appendChild(button);
+
+			let nameField = td.parentNode.firstChild;
+			nameField.removeChild(nameField.firstChild);
+
+			let input = document.createElement("input");
+			input.setAttribute("value",players[nameField.getAttribute("id")].name);
+			nameField.appendChild(input);
+		}
+
+		function handleSaveName(e) {
+			let td = e.srcElement.parentNode;
+			let tr = td.parentNode;
+			let id = tr.firstChild.getAttribute("id");
+			players[id].name = tr.firstChild.firstChild.value;
+			handleCancelSaveName(e);
+		}
+
+		function handleCancelSaveName(e) {
+			let td = e.srcElement.parentNode;
+			let tr = td.parentNode;
+			let id = tr.firstChild.getAttribute("id");
+			let nameField = tr.firstChild;
+			nameField.removeChild(nameField.firstChild);
+			if (players[id].active) {
+				nameField.textContent = players[id].name;
+			} else {
+				let strike = document.createElement("strike");
+				strike.textContent = players[id].name;
+				nameField.appendChild(strike);
+			}
+			printTable(players,table1,headings);
+			renderUpdateName(td);
+		}
+
+		function handleToggleActive(e) {
+			let td = e.srcElement.parentNode;
+			let tr = td.parentNode;
+			let id = tr.firstChild.getAttribute("id");
+			players[id].active = !players[id].active;
+			e.srcElement.textContent = players[id].active ? "Mark as Inactive" :
+				"Mark as Active";
+			renderManagePlayers();
+			printTable(players,table1,headings);
+		}
+
+		function handleAddPlayer(e) {
+			let name = document.getElementById("newPlayer").value;
+			[nextId,headings] = addPlayer(nextId,name,eloInitial);
+			printTable(players,table1,headings);
+			renderManagePlayers();
+		}
+
+		function highlightMe(e) {
+			e.srcElement.select();
+		}
+
+		function handleWinButton(e) {
+			pendingMatch.win = e.srcElement.id;
+			renderPendingMatch();
+		}
+
+		function handleLossButton(e) {
+			pendingMatch.loss = e.srcElement.id;
+			renderPendingMatch();
+		}
+
+		function handleSubmitMatch(e) {
+			markWin(pendingMatch.win,pendingMatch.loss,matches);
+			calcPlayerStats(players,matches,eloCalc,eloConstant,eloInitial);
+			printTable(players,table1,headings);
+			//UPDATE ME!
+			while (details.firstChild) {
+				details.removeChild(details.firstChild);
+			}
+			resetPendingMatch();
+			function resetPendingMatch() {
+				pendingMatch.win = "";
+				pendingMatch.loss = "";
+			}
+			renderMatchHistory();
+		}
+
+		function renderPendingMatch() {
+			while (details.firstChild) {
+				details.removeChild(details.firstChild);
+			}
+			let winner = pendingMatch.win ? players[pendingMatch.win].name : "";
+			let loser = pendingMatch.loss ? players[pendingMatch.loss].name : "";
+			let text = winner + " defeats " + 
+				loser;
+			if (pendingMatch.win && pendingMatch.loss) {
+				text += " (" + Math.round(100*prob(players[pendingMatch.win].elo,
+					players[pendingMatch.loss].elo)) + "%)";
+
+				if (pendingMatch.win != pendingMatch.loss) {
+					let sb = document.createElement("button");
+					sb.setAttribute("id","submit");
+					sb.textContent = "Submit Match";
+					sb.addEventListener("click",handleSubmitMatch);
+					details.appendChild(sb);
+				}
+			}
+			let textDiv = document.createElement("div");
+			textDiv.textContent = text;
+			details.appendChild(textDiv);
+		}
+
+		//Id1 beats Id2
+		//assumes id1 and id2 both exist
+		function markWin(id1,id2,matches) {
+			matches.push({
+				w: id1,
+				l: id2,
+			});
+		}
+
+		function calcPlayerStats(players,matches,eloFunc,eloConstant,eloInitial) {
+			//Delete current stats
+			let play = Object.values(players);
+			for (let i=0;i<play.length;i++) {
+				play[i].wins = play[i].losses =
+					play[i].streak = play[i].winStreak = play[i].lossStreak = 0;
+				play[i].streakType = "";
+				play[i].elo = eloInitial;
+			}
+
+			matches.forEach( match => {
+				markWin(match.w,match.l,players,eloFunc,eloConstant)
+			});
+
+			function markWin(id1,id2,players,eloFunc,eloConstant) {
+				[r1,r2] = eloFunc(players[id1].elo,players[id2].elo,eloConstant);
+				players[id1].elo = r1;
+				players[id2].elo = r2;
+				
+				players[id1].wins++
+				players[id2].losses++
+
+				if (players[id1].streakType === "W") {
+					players[id1].streak++;
+				} else {
+					players[id1].streakType = "W";
+					players[id1].streak = 1;
+				}
+
+				if (players[id2].streakType === "L") {
+					players[id2].streak++;
+				} else {
+					players[id2].streakType = "L";
+					players[id2].streak = 1;
+				}
+
+				players[id1].winStreak = 
+					Math.max(players[id1].streak,players[id1].winStreak);
+				players[id2].lossStreak = 
+					Math.max(players[id2].streak,players[id2].lossStreak);
+			}
+		}
+
+		//assumes rating-a wins
+		function eloCalc(ra,rb,k) {
+			pa = prob(ra,rb);
+			pb = prob(rb,ra);
+			ra = ra + k * (1-pa);
+			rb = rb + k * (0-pb);
+			return [ra,rb];
+
+			function prob(ra,rb) {
+				return 1 / (1+10**((rb-ra)/400));
+			}
+		}
+
+		function prob(ra,rb) {
+			return 1 / (1+10**((rb-ra)/400));
+		}
+
+		function addPlayer(id,name,eloInitial) {
+			players[id]={
+				id:id,
+				name:name,
+				elo:eloInitial,
+				wins:0,
+				losses:0,
+				streak:0,
+				streakType:"",
+				winStreak:0,
+				lossStreak:0,
+				active:true,
+			}
+			let headings = ["Name","ELO","Wins","Losses","Current Streak",
+							"Longest Winning","Longest Losing"];
+			return [++id,headings];
+		}
+
+		function printTable(players,table,headings) {
+			while (table.firstChild) {
+				table.removeChild(table.firstChild);
+			}
+			headings = ["Rank"].concat(headings.slice());
+			headings.push("Actions");
+			updateHeadings(headings,table);
+			let play = Object.values(players);
+			play = play.sort((a,b)=> {
+				if (a.elo == b.elo) {
+					return a.id - b.id;
+				} else {
+					return b.elo - a.elo;
+				}
+			});
+			for (let i=0;i<play.length;i++) {
+				addRow(play[i],table,i+1);
+			}
+
+			function updateHeadings(headings,table) {
+				let row = document.createElement("tr");
+				let head = headings.map(elm => {
+					let col = document.createElement("td");
+					col.textContent = elm;
+					row.appendChild(col);
+				});
+				table.appendChild(row);
+			}
+
+			function addRow(player,table,rank) {
+				if (!player.active) {
+					return;
+				}
+				let row = document.createElement("tr");
+				let keys = ["rank","name","elo","wins","losses",
+							"streak","winStreak","lossStreak","action"];
+				for (let i=0;i<keys.length;i++) {
+					let stat = keys[i];
+					let col = document.createElement("td");
+					if (stat === "rank") {
+						col.textContent = rank;
+					} else if (stat === "streak") {
+						col.textContent = player.streakType + player.streak;
+					} else if (stat === "elo") {
+						col.textContent = Math.round(player.elo);
+					} else if (stat === "action") { 
+						createButtons(player.id,col);
+					} else {
+						col.textContent = String(player[stat]);
+					}
+					row.appendChild(col)
+				}
+				table.appendChild(row);
+
+				function createButtons(id,col) {
+					let wb = document.createElement("button");
+					let lb = document.createElement("button");
+					wb.setAttribute("id",id);
+					lb.setAttribute("id",id);
+					wb.textContent = "Win";
+					lb.textContent = "Loss";
+					wb.addEventListener("click",handleWinButton);
+					lb.addEventListener("click",handleLossButton);
+					col.appendChild(wb);
+					col.appendChild(lb);
+				}
+			}
+		}
+
+		let headings;
+		[nextId,headings] = addPlayer(nextId,"kevin",eloInitial);
+		[nextId,headings] = addPlayer(nextId,"allison",eloInitial);
+		initializeButtons(buttonNav);
+		//console.table(players);
+		//console.log(headings);
+
+		//markWin(1,0,matches);
+		calcPlayerStats(players,matches,eloCalc,eloConstant,eloInitial);
+		printTable(players,table1,headings);
+	</script>
+</body>
+</html>
