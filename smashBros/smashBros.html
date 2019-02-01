@@ -40,6 +40,25 @@
 		const table1 = document.querySelector("#table1");
 		const details = document.querySelector("#details");
 		const buttonNav = document.querySelector("#buttonNav");
+		var headings = ["Name","ELO","Wins","Losses","Current Streak",
+			"Longest Winning","Longest Losing"];
+
+		loadFromLocalStorage();
+
+		function loadFromLocalStorage() {
+			let newPlayers = JSON.parse(localStorage.getItem("kevappPlayers"));
+			let newNextId = JSON.parse(localStorage.getItem("kevappNextId"));
+			let newMatches = JSON.parse(localStorage.getItem("kevappMatches"));
+			players = newPlayers ? newPlayers : players;
+			nextId = newNextId ? newNextId : nextId;
+			matches = newMatches ? newMatches: matches;
+		}
+
+		function saveToLocalStorage() {
+			localStorage.setItem("kevappPlayers",JSON.stringify(players));
+			localStorage.setItem("kevappNextId",JSON.stringify(nextId));
+			localStorage.setItem("kevappMatches",JSON.stringify(matches));
+		}
 
 		function initializeButtons(buttonNav) {
 			let play = document.createElement("button");
@@ -174,6 +193,7 @@
 			let input = document.createElement("input");
 			input.setAttribute("value",players[nameField.getAttribute("id")].name);
 			nameField.appendChild(input);
+			saveToLocalStorage()
 		}
 
 		function handleSaveName(e) {
@@ -199,6 +219,7 @@
 			}
 			printTable(players,table1,headings);
 			renderUpdateName(td);
+			saveToLocalStorage();
 		}
 
 		function handleToggleActive(e) {
@@ -210,6 +231,7 @@
 				"Mark as Active";
 			renderManagePlayers();
 			printTable(players,table1,headings);
+			saveToLocalStorage();
 		}
 
 		function handleAddPlayer(e) {
@@ -247,6 +269,7 @@
 				pendingMatch.loss = "";
 			}
 			renderMatchHistory();
+			saveToLocalStorage();
 		}
 
 		function renderPendingMatch() {
@@ -281,6 +304,7 @@
 				w: id1,
 				l: id2,
 			});
+			saveToLocalStorage();
 		}
 
 		function calcPlayerStats(players,matches,eloFunc,eloConstant,eloInitial) {
@@ -359,6 +383,7 @@
 			let headings = ["Name","ELO","Wins","Losses","Current Streak",
 							"Longest Winning","Longest Losing"];
 			return [++id,headings];
+			saveToLocalStorage();
 		}
 
 		function printTable(players,table,headings) {
@@ -376,8 +401,9 @@
 					return b.elo - a.elo;
 				}
 			});
+			let rank = 1;
 			for (let i=0;i<play.length;i++) {
-				addRow(play[i],table,i+1);
+				rank = addRow(play[i],table,rank);
 			}
 
 			function updateHeadings(headings,table) {
@@ -392,7 +418,7 @@
 
 			function addRow(player,table,rank) {
 				if (!player.active) {
-					return;
+					return rank;
 				}
 				let row = document.createElement("tr");
 				let keys = ["rank","name","elo","wins","losses",
@@ -414,6 +440,7 @@
 					row.appendChild(col)
 				}
 				table.appendChild(row);
+				return rank+1;
 
 				function createButtons(id,col) {
 					let wb = document.createElement("button");
@@ -430,9 +457,9 @@
 			}
 		}
 
-		let headings;
-		[nextId,headings] = addPlayer(nextId,"kevin",eloInitial);
-		[nextId,headings] = addPlayer(nextId,"allison",eloInitial);
+		//let headings;
+		//[nextId,headings] = addPlayer(nextId,"kevin",eloInitial);
+		//[nextId,headings] = addPlayer(nextId,"allison",eloInitial);
 		initializeButtons(buttonNav);
 		//console.table(players);
 		//console.log(headings);
