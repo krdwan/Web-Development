@@ -58,6 +58,7 @@
 			localStorage.setItem("kevappPlayers",JSON.stringify(players));
 			localStorage.setItem("kevappNextId",JSON.stringify(nextId));
 			localStorage.setItem("kevappMatches",JSON.stringify(matches));
+			console.log('what');
 		}
 
 		function initializeButtons(buttonNav) {
@@ -193,7 +194,7 @@
 			let input = document.createElement("input");
 			input.setAttribute("value",players[nameField.getAttribute("id")].name);
 			nameField.appendChild(input);
-			saveToLocalStorage()
+			saveToLocalStorage();
 		}
 
 		function handleSaveName(e) {
@@ -239,6 +240,7 @@
 			[nextId,headings] = addPlayer(nextId,name,eloInitial);
 			printTable(players,table1,headings);
 			renderManagePlayers();
+			saveToLocalStorage();
 		}
 
 		function highlightMe(e) {
