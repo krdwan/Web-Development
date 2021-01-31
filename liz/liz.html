@@ -1,0 +1,93 @@
+<!doctype html>
+<html>
+<head>
+    <title>Lizzy</title>
+    <link rel="preconnect" href="https://fonts.gstatic.com">
+<link href="https://fonts.googleapis.com/css2?family=Arizonia&display=swap" rel="stylesheet">
+    <style>
+        #wrapper {
+            height: 560px;
+            overflow-y: hidden;
+            position: relative;
+        }
+
+        img {
+            position: absolute;
+            
+        }
+
+        .cat {
+            top: 40px;
+        }
+
+        .thinking {
+            top: 15px;
+            left: 115px;
+            height: 150px;
+            background: white;   
+        }
+
+        .words {
+            top: 40px;
+            position: absolute;
+            left: 158px;
+            font-size: 50px;
+            z-index: 1;
+            font-family: Arizonia;
+        }
+
+        .heart {
+            position: relative;
+            transform: rotate(45deg);
+            border-bottom-right-radius: 5px;
+            background: pink;
+            z-index: 1;
+            height: 40px;
+            width: 40px;
+            left: 235px;
+            top: 330px;
+            animation: beating 2s infinite;
+        }
+
+        .heart:before, .heart:after {
+            background: inherit;
+            content: '';
+            height: 100%;
+            width: 100%;
+            position: absolute;
+            border-radius: 50%;
+        }
+
+        .heart:before {
+            top: -50%;
+        }
+
+        .heart:after {
+            left: -50%;
+        }
+
+        @keyframes beating {
+            40% {
+                transform: rotate(45deg) scale(1.1);
+                background:rgb(255, 217, 223);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id='wrapper'>
+        <div class='words'>Lizzy...</div>
+        <img class='thinking' />
+        <img class='cat' />
+        <div class='heart'></div>
+    </div>
+    <script>
+        const img = document.querySelector('.cat');
+        img.src = 'https://pusheen.com/wp-content/uploads/2019/02/Pusheen-Character-Badge-1.svg'
+        console.log(img.src);
+
+        const thinking = document.querySelector('.thinking');
+        thinking.src = 'https://www.pikpng.com/pngl/b/41-414976_illustration-of-a-blank-cartoon-bubble-thought-bubble.png';
+    </script>
+</body>
+</html>
